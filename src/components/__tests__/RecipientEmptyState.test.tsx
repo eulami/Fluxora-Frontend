@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import RecipientEmptyState from "../RecipientEmptyState";
 
 describe("RecipientEmptyState", () => {
-  it("renders recipient empty state region and heading when connected vs disconnected", () => {
+  it("renders distinct recipient empty states when connected vs disconnected", () => {
     const { rerender } = render(<RecipientEmptyState walletConnected={false} />);
     expect(
       screen.getByRole("region", { name: "Recipient empty state" }),
@@ -11,11 +11,19 @@ describe("RecipientEmptyState", () => {
     expect(
       screen.getByRole("heading", { name: /connect your wallet/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/connect a stellar wallet to view incoming streams/i),
+    ).toBeInTheDocument();
+    const disconnectedContent = screen.getByRole("region").textContent;
 
     rerender(<RecipientEmptyState walletConnected={true} />);
     expect(
       screen.getByRole("heading", { name: /no active streams/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/when someone streams usdc to your wallet address/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("region").textContent).not.toBe(disconnectedContent);
   });
 
   it("renders connect wallet CTA when wallet is disconnected", () => {
@@ -37,11 +45,28 @@ describe("RecipientEmptyState", () => {
     expect(onPrimaryAction).toHaveBeenCalledTimes(1);
   });
 
-  it("renders loading status skeleton when loading is true", () => {
-    render(<RecipientEmptyState loading={true} />);
+  it("renders only the loading status while recipient data is loading", () => {
+    const { rerender } = render(<RecipientEmptyState loading={true} />);
     expect(
       screen.getByRole("status", { name: "Loading content" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "Recipient empty state" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /connect your wallet/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /no active streams/i }),
+    ).not.toBeInTheDocument();
+
+    rerender(<RecipientEmptyState walletConnected={true} loading={true} />);
+    expect(
+      screen.queryByRole("region", { name: "Recipient empty state" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /no active streams/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders error banner and handles retry action", () => {
